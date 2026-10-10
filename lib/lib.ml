@@ -1,5 +1,6 @@
 (************************************************************************
 0. Fill your name and OU ID or PID on the line below:
+    Jt Hepke jh639423@ohio.edu
  *)
 
 open QCheck
@@ -44,7 +45,9 @@ let rec nodup (l : 'a list) : bool =
    duplicates. Hint: structural recursion and List.filter. *)
 
 let rec dedup (l : 'a list) : 'a list =
-  todo (dedup, l) (* replace with your solution *)
+  match l with
+  | [] -> []
+  | x :: xs -> x :: dedup (List.filter (fun y -> not (y = x ))xs)
 
 let () = add_test "dedup" @@
            fun _ ->
@@ -93,22 +96,30 @@ module ListSet : functor (T : Type) ->
        to preserve the ListSet invariant: no duplicates! Hint:
        'List.mem' could be useful. https://v2.ocaml.org/api/List.html *)
     let insert (x : elt) (l : elt list) : elt list =
-      todo (x, l) (* replace with your solution *)
+      if List.mem x l then l else x :: l (*List.mem checks in the list, no add # to the front of list, yes return liste*)
 
     (** 3. (10 pts) Write the 'elem' function for ListSets. This should
        be easy if you attended class on Sep 7 :) *)
     let rec elem (x : elt) (l : elt list) : bool =
-      todo (elem, x, l) (* replace with your solution *) 
+      match l with
+      | [] -> false
+      | y :: ys -> if x = y then true else elem x ys
 
     (** 4. (10 pts) Write the 'union' function for ListSets. Hint:
        'insert' could be useful. *)
     let rec union (a : elt list) (b : elt list) : elt list =
-      todo (union, a, b) (* replace with your solution *)
+      match a with
+      | [] -> b
+      | x :: xs -> union xs (insert x b) (* insert first into b then repeat, insert function checks for duplicates*)
 
     (** 5. (10 pts) Write the 'intersection' function for
        ListSets. Hint: 'List.filter' could be useful. *)
-    let intersection (a : elt list) (b : elt list) : elt list =
-      todo (a, b) (* replace with your solution *)
+    let rec intersection (a : elt list) (b : elt list) : elt list =
+      match a with
+      | [] -> [] (*is a empty*)
+      | x :: xs ->  (*x from rest*)
+        if elem x b then x :: intersection xs b (*is x in b if yes keep x no skip x*)
+        else intersection xs b
 
     (* Use dedup to establish the ListSet invariant. *)
     let of_list = dedup
@@ -205,18 +216,34 @@ module BstSet : functor (Ord : OType) ->
     (** 6. (10 pts) Write an 'insert' function for inserting a single
        element into a BST. Make sure to preserve the BST invariant! *)
     let rec insert (x : elt) (t : elt bst) : elt bst =
-      todo (insert, x, t) (* replace with your solution *)
+      match t with
+      | Leaf -> Node (x, Leaf, Leaf) (*empty = create node*)
+      | Node (y, l, r) ->
+        if x = y then t (* already valid keep tree*)
+        else if Ord.le x y then (*less then put in left*)
+          Node (y, insert x l, r)
+        else
+          Node (y, l, insert x r) (*insert into right*)
 
     (** 7. (10 pts) Write a 'union' function for taking the union of
        two BSTs. Hint: structural recursion and 'insert'. *)
     let rec union (a : elt bst) (b : elt bst) : elt bst =
-      todo (union, a, b) (* replace with your solution *)
+      match a with
+      | Leaf -> b (*a empty return b*)
+      | Node (x, l, r) -> (*get node value and children*)
+        union l (union r (insert x b)) (*add value, insert check duplicates. Repeat for children checking right first*)
 
     (** 8. (10 pts) Write an 'intersection' function for taking the
        intersection of two BSTs. Hint: you may find it useful to use
        'union' from above. *)
     let rec intersection (a : elt bst) (b : elt bst) : elt bst =
-      todo (intersection, a, b) (* replace with your solution *)
+      match a with
+      | Leaf -> Leaf (*empty list means no value being kept*)
+      | Node (x, l, r) ->
+        let left = intersection l b in (*find matching values in both children*)
+        let right = intersection r b in
+        if elem x b then insert x (union left right) (*current vlaue in the b tree*)
+        else union left right
 
     (* Convert a list to a BST. *)
     let rec of_list = function
