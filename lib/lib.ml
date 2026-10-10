@@ -385,6 +385,7 @@ let r8 = node Black 1
    property (i--iv) above. Then your overall rbt_inv function can just
    string these individual invariant-checking functions together. *)
 
+
 (* Check that a given predicate holds on all elements in a BST. *)
 let rec rbt_forall (pred : 'a -> bool) (t : 'a rbtree) : bool =
   match t with
@@ -392,7 +393,51 @@ let rec rbt_forall (pred : 'a -> bool) (t : 'a rbtree) : bool =
   | RBNode (_, x, l, r) -> pred x && rbt_forall pred l && rbt_forall pred r
 
 let rbt_inv (le : 'a -> 'a -> bool) (t : 'a rbtree) : bool =
-  todo (le, t) (* replace with your solution *)
+  (*Check black root*)
+  let rootBlack = 
+    match t with
+    | RBLeaf -> true
+    | RBNode (c, _, _, _) -> c = Black (*check root node color is black*)
+  in
+  (* Check that red nodes have black children*)
+  let rec red t =
+    match t with
+    | RBLeaf -> true
+    | RBNode (c, _, l, r) ->
+        if c = Red then
+          color_of l = Black && color_of r = Black && red l && red r (*if node is red both children have to be black*)
+        else red l && red r (*check both children return true if rules are valid*)
+  in
+
+  (*Count black nodes left*)
+  let rec blackHeight t =
+    match t with
+    | RBLeaf -> 1 (*empty leaf is black node*)
+    | RBNode (c, _, l, _) -> (*get color and let child*)
+      blackHeight l + (if c = Black then 1 else 0) (*count the left side and add one if parent node is black*)
+
+  in
+  let rec height t =
+    match t with
+    | RBLeaf -> true
+    | RBNode (_, _, l, r) -> (*get left and right children*)
+      blackHeight l = blackHeight r && height l && height r (*check both right and left have equal black counnts then check there children*)
+  
+  in
+
+  (*Check that the values are in BTS order*)
+  let rec bst t =
+    match t with
+    | RBLeaf -> true
+    | RBNode (_, x, value_l, value_r) -> (*current value & left subtree and right subtree*)
+      rbt_forall (fun y -> le y x && not (le x y)) value_l && (* left is less then x*)
+      rbt_forall (fun y -> le x y && not (le y x)) value_r && (*right is greater then x*)
+      bst value_l && bst value_r (*call back for children*)
+
+  in
+
+  rootBlack && red t && height t && bst t (*return true if every funciton is valid*)
+
 
 let () = add_test "rbt_inv" @@
            fun _ ->
@@ -456,12 +501,20 @@ module RbtSet : functor (Ord : OType) ->
     (** 10. (5 pts) Write a 'union' function for taking the union of
        two RBTs. Hint: similar to #6. *)
     let rec union (a : elt rbtree) (b : elt rbtree) : elt rbtree =
-      todo (union, a, b) (* replace with your solution *)
+      match a with
+      | RBLeaf -> b
+      | RBNode (_, x, l, r) -> union l (union r (insert x b))
 
     (** 11. (5 pts) Write an 'intersection' function for taking the
        intersection of two RBTs. Hint: similar to #7. *)
     let rec intersection (a : elt rbtree) (b : elt rbtree) : elt rbtree =
-      todo (intersection, a, b) (* replace with your solution *)
+      match a with
+      | RBLeaf -> RBLeaf
+      | RBNode (_, x, l, r) ->
+        let left = intersection l b in
+        let right = intersection r b in
+        if elem x b then insert x (union left right)
+        else union left right
 
     let rec of_list l =
       match l with
